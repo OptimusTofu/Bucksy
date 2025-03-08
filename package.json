@@ -1,0 +1,36 @@
+{
+  "name": "bucksy",
+  "version": "0.0.1",
+  "description": "a discord utility/game bot",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "bad-words": "^3.0.4",
+    "canvas": "^2.7.0",
+    "cron": "^1.8.2",
+    "discord.js": "^12.4.1",
+    "dotenv": "^8.2.0",
+    "jimp": "^0.16.1",
+    "mongodb": "^3.6.3",
+    "potrace": "^2.1.8",
+    "puppeteer": "^5.5.0",
+    "sharp": "^0.27.2",
+    "tesseract.js": "^2.1.4"
+  },
+  "devDependencies": {
+    "@google-cloud/dialogflow": "^4.1.4",
+    "eslint": "^7.23.0",
+    "eslint-config-prettier": "^8.1.0",
+    "prettier": "2.2.1",
+    "uuid": "^8.3.2"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "monitor": "nodemon index.js",
+    "daemon": "pm2 start index.js",
+    "prettify": "yarn prettier --write .",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC"
+}

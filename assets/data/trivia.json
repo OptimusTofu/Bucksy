@@ -1,0 +1,26 @@
+[
+    {
+        "content": "What color is red?",
+        "category": "general",
+        "difficulty": "easy",
+        "points": 100,
+        "correct_answers": ["red"],
+        "possible_answers": ["red", "blue", "green", "brown"]
+    },
+    {
+        "content": "Which one is three?",
+        "category": "general",
+        "difficulty": "easy",
+        "points": 100,
+        "correct_answers": ["3", "three"],
+        "possible_answers": ["one", "two", "three", "four"]
+    },
+    {
+        "content": "How many questions are there?",
+        "category": "general",
+        "difficulty": "easy",
+        "points": 100,
+        "correct_answers": ["3", "three"],
+        "possible_answers": ["3", "two", "1", "four"]
+    }
+]

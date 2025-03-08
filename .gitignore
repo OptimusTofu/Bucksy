@@ -1,0 +1,13 @@
+# application runtime files
+.env
+config.json
+service.json
+
+# winston generated logs
+logs/
+
+# npm generated modules
+node_modules/
+
+# vscode generated settings
+.vscode/
