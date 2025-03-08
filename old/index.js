@@ -4,7 +4,15 @@ const commands = fs.readdirSync("./commands");
 const events = fs.readdirSync("./events").filter((file) => file.endsWith(".js"));
 const dotenv = require("dotenv");
 const config = require("./config.json");
-const bot = new Client();
+const DatabaseController = require("./controllers/database");
+const bot = new Client({
+  intents: [
+    "GUILDS",
+    "GUILD_MESSAGES",
+    "GUILD_MEMBERS",
+    "GUILD_MESSAGE_REACTIONS"
+  ]
+});
 
 dotenv.config();
 
@@ -33,6 +41,22 @@ for (const file of events) {
   }
 }
 
-bot.login(process.env.TOKEN);
+async function startBot() {
+  try {
+    const dbInitialized = await DatabaseController.initializeDB();
+    if (!dbInitialized) {
+      console.error("Failed to initialize database. Exiting...");
+      process.exit(1);
+    }
+
+    await bot.login(process.env.TOKEN);
+    console.log(`${bot.user.username} is online!`);
+  } catch (error) {
+    console.error("Error starting the bot:", error);
+    process.exit(1);
+  }
+}
+
+startBot();
 
 exports.bot = bot;

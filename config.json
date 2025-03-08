@@ -1,0 +1,72 @@
+{
+  "prefix": ["?", "!", "."],
+  "mongoDBURL": "mongodb://localhost:27017/",
+  "mongoDBName": "bucksy",
+  "botName": "Bucksy",
+  "aiID": "326eeaedc9ca4d92b16848f0962b2d78",
+  "guildID": "390210848942981123",
+  "qotdTime": "0 0 8 * * *",
+  "qotdURL": "https://www.reddit.com/r/AskReddit/",
+  "guessMsg": "Who's that Pokemon?",
+  "guessTime": "0 30 9-21 * * *",
+  "startingPoints": 500,
+  "verifiedRole": true,
+  "modRoles": ["moderator", "administrative", "bots"],
+  "teams": ["instinct", "mystic", "valor"],
+  "channels": {
+    "admin": {
+      "id": "392547781098733568",
+      "name": "admin-lounge"
+    },
+    "rares": {
+      "id": "539351065603080212",
+      "name": "ultra-rare-pokemon"
+    },
+    "qotd": {
+      "id": "688448609934508165",
+      "name": "question-of-the-day"
+    },
+    "slots": {
+      "id": "690053367841685526",
+      "name": "slot-machine"
+    },
+    "guess": {
+      "id": "536924636269772820",
+      "name": "guess-that-pokemon"
+    },
+    "ai": {
+      "id": "691340500657111061",
+      "name": "bucksy-chat"
+    },
+    "count": {
+      "id": "528752452862869505",
+      "name": "pokemon-count-challenge"
+    },
+    "pvp": {
+      "id": "673943852457000986",
+      "name": "everything-pvp"
+    }
+  },
+  "hoppip": {
+    "name": "Hoppip 3.0",
+    "id": [
+      "531759078716866580",
+      "531762251787403275",
+      "533245310898536468",
+      "534962124653330444",
+      "534962313132769280",
+      "534962492988850186"
+    ]
+  },
+  "emojis": {
+    "nanab": "<:nanab_berry:690047532687949832>",
+    "pinap": "<:pinap_berry:690047623729774677>",
+    "razz": "<:razz_berry:690047698975326234>",
+    "silver_pinap": "<:silver_pinap_berry:690047733813608448>",
+    "golden_razz": "<:golden_razz_berry:690047657149857794>",
+    "pokecoin": "<:pokecoin:690199453751443476>",
+    "instinct": "<:instinct:542521772059131905>",
+    "mystic": "<:mystic:542521976351227916>",
+    "valor": "<:valor:542521820318793728>"
+  }
+}

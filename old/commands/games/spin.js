@@ -12,33 +12,42 @@ module.exports = {
     id: config.channels.slots.id,
     name: config.channels.slots.name,
   },
-  execute(msg) {
-    DatabaseController.userExists(msg.member.user.id)
-      .then(function (result) {
-        if (!result) {
-          return msg.reply(
-            'You need to register to the points registry first. Please type "!register"'
-          );
-        }
+  async execute(msg) {
+    try {
+      // Check if user exists in the database
+      const userRegistered = await DatabaseController.userExists(msg.member.user.id);
+      if (!userRegistered) {
+        return msg.reply(
+          'You need to register to the points registry first. Please type "!register"'
+        );
+      }
 
-        DatabaseController.updateBalance(msg.member.user.id, -1).catch(console.dir);
-      })
-      .catch(console.dir);
+      // Deduct 1 point for spinning
+      const balanceUpdated = await DatabaseController.updateBalance(msg.member.user.id, -1);
+      if (!balanceUpdated) {
+        return msg.reply("There was an error updating your balance. Please try again later.");
+      }
 
-    const first = generateRandomEmoji(emojis.length);
-    const second = generateRandomEmoji(emojis.length);
-    const third = generateRandomEmoji(emojis.length);
+      // Generate random emojis for the slot machine
+      const first = generateRandomEmoji(emojis.length);
+      const second = generateRandomEmoji(emojis.length);
+      const third = generateRandomEmoji(emojis.length);
 
-    const result = first + second + third;
-    const win = first === second && second === third ? true : false;
-    const icon = msg.author.displayAvatarURL();
+      const result = first + second + third;
+      const win = first === second && second === third;
+      const icon = msg.author.displayAvatarURL();
 
-    const slotMsg = new MessageEmbed()
-      .setFooter("Try again.", icon)
-      .addField("Slot Machine Results", result, true)
-      .setColor(0xffa500);
+      // If user didn't win, send a message and return
+      if (!win) {
+        const slotMsg = new MessageEmbed()
+          .setFooter("Try again.", icon)
+          .addField("Slot Machine Results", result, true)
+          .setColor(0xffa500);
 
-    if (win) {
+        return msg.channel.send(slotMsg);
+      }
+
+      // Handle win scenario
       let winMsg;
       let score;
 
@@ -113,13 +122,29 @@ module.exports = {
             )
             .setColor(0x006600);
           break;
+        default:
+          score = 10;
+          winMsg = new MessageEmbed()
+            .setFooter(
+              "You Won! 10 PokeCoins have been added to your account.",
+              icon
+            )
+            .addField(
+              `Slot Machine Results ${config.emojis.pokecoin}`,
+              result,
+              true
+            )
+            .setColor(0x006600);
       }
 
-      DatabaseController.updateBalance(msg.member.user.id, score).catch(console.dir);
+      // Update user's balance with winnings
+      await DatabaseController.updateBalance(msg.member.user.id, score);
 
-      msg.channel.send(winMsg);
-    } else {
-      msg.channel.send(slotMsg);
+      // Send win message
+      return msg.channel.send(winMsg);
+    } catch (error) {
+      console.error("Error in spin command:", error);
+      return msg.reply("An error occurred while processing your spin. Please try again later.");
     }
   },
 };
