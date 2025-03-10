@@ -1,8 +1,10 @@
-import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, Events } from 'discord.js';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import * as config from '../config.json';
 import * as DatabaseController from './controllers/database';
+import * as SlashCommandController from './controllers/slashCommand';
+import { registerCommands } from './util/registerCommands';
 import { BucksyClient, BotCommand, BotEvent } from './types';
 
 // Load environment variables
@@ -35,6 +37,9 @@ for (const folder of commands) {
     }
 }
 
+// Load slash commands
+bot.slashCommands = SlashCommandController.loadSlashCommands();
+
 // Load events
 const eventFiles = fs
     .readdirSync('./src/events')
@@ -50,6 +55,11 @@ for (const file of eventFiles) {
     }
 }
 
+// Add interaction create event handler
+bot.on(Events.InteractionCreate, async (interaction) => {
+    await SlashCommandController.handleInteraction(interaction, bot);
+});
+
 // Initialize database and start the bot
 async function startBot() {
     try {
@@ -63,6 +73,22 @@ async function startBot() {
         // Login to Discord
         await bot.login(process.env.TOKEN);
         console.log(`${bot.user?.username} is online!`);
+
+        // Register slash commands
+        if (process.env.NODE_ENV === 'development') {
+            // Register guild commands in development (faster updates)
+            await registerCommands(
+                process.env.TOKEN || '',
+                bot.user?.id || '',
+                config.guildID
+            );
+        } else {
+            // Register global commands in production
+            await registerCommands(
+                process.env.TOKEN || '',
+                bot.user?.id || ''
+            );
+        }
     } catch (error) {
         console.error("Error starting the bot:", error);
         process.exit(1);

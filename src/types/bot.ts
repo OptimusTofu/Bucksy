@@ -10,6 +10,7 @@ import {
     ClientEvents
 } from 'discord.js';
 import { Config } from './config';
+import { SlashCommand } from './slashCommand';
 
 /**
  * Interface for command arguments
@@ -81,6 +82,9 @@ export class BucksyClient extends Client {
     /** Collection of commands */
     public commands: Collection<string, BotCommand>;
 
+    /** Collection of slash commands */
+    public slashCommands: Collection<string, SlashCommand>;
+
     /** Collection of command cooldowns */
     public cooldowns: Collection<string, Collection<string, number>>;
 
@@ -90,6 +94,7 @@ export class BucksyClient extends Client {
     constructor(options: ClientOptions) {
         super(options);
         this.commands = new Collection();
+        this.slashCommands = new Collection();
         this.cooldowns = new Collection();
         this.config = {} as Config;
     }

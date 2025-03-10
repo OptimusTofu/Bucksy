@@ -43,7 +43,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "start:old": "node old/index.js"
+    "start:old": "node old/index.js",
+    "register:commands": "ts-node src/scripts/registerSlashCommands.ts",
+    "register:commands:global": "ts-node src/scripts/registerSlashCommands.ts --global"
   },
   "author": "",
   "license": "ISC"

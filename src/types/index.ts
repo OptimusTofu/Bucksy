@@ -4,4 +4,5 @@ export * from './config';
 export * from './database';
 export * from './games';
 export * from './discord';
-export * from './utils'; 
+export * from './utils';
+export * from './slashCommand'; 
