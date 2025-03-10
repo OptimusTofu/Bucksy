@@ -1,5 +1,6 @@
-import { MongoClient, Collection, Db } from 'mongodb';
+import { MongoClient, Collection, Db, MongoServerError } from 'mongodb';
 import * as config from '../../config.json';
+import * as dotenv from 'dotenv';
 import {
     User,
     Shiny,
@@ -13,7 +14,11 @@ import {
     QuestionResult
 } from '../types/database';
 
-const uri = config.mongoDBURL;
+// Load environment variables
+dotenv.config();
+
+// Get MongoDB URI from environment variables or fallback to config
+const uri = process.env.MONGODB_URI || config.mongoDBURL;
 
 // Create a MongoDB client with connection pooling
 const client = new MongoClient(uri, {
@@ -40,21 +45,54 @@ export async function initializeDB(): Promise<boolean> {
         await client.connect();
         console.log("Connected to MongoDB");
 
+        // Get database name from URI or config
+        const dbName = process.env.MONGODB_URI ?
+            process.env.MONGODB_URI.split('/').pop()?.split('?')[0] :
+            config.mongoDBName;
+
         // Get database and collections
-        db = client.db(config.mongoDBName);
+        db = client.db(dbName);
+
+        // Test the connection with a simple command
+        await db.command({ ping: 1 });
+        console.log("Database connection verified");
+
         collections = {
             users: db.collection<User>("users"),
             shinies: db.collection<Shiny>("shinies"),
             questions: db.collection<Question>("questions")
         };
 
-        // Create indexes if needed
-        await collections.users.createIndex({ id: 1 }, { unique: true });
-        await collections.shinies.createIndex({ title: 1 }, { unique: true });
+        // Create indexes
+        try {
+            await collections.users.createIndex({ user_id: 1 }, { unique: true });
+            await collections.shinies.createIndex({ pokemon: 1 }, { unique: true });
+            await collections.questions.createIndex({ question: 1 }, { unique: true });
+        } catch (error) {
+            if (error instanceof MongoServerError) {
+                if (error.code === 13) { // Permission denied
+                    console.warn("Warning: Could not create indexes due to permission issues. This may affect performance but is not critical.");
+                } else {
+                    throw error;
+                }
+            } else {
+                throw error;
+            }
+        }
 
         return true;
     } catch (error) {
-        console.error("Failed to connect to MongoDB:", error);
+        if (error instanceof MongoServerError) {
+            if (error.code === 18) { // Authentication failed
+                console.error("Failed to connect to MongoDB: Authentication failed. Please check your username and password.");
+            } else if (error.code === 13) { // Permission denied
+                console.error("Failed to connect to MongoDB: Permission denied. Please check your user permissions.");
+            } else {
+                console.error("Failed to connect to MongoDB:", error.message);
+            }
+        } else {
+            console.error("Failed to connect to MongoDB:", error);
+        }
         return false;
     }
 }

@@ -45,7 +45,15 @@
     "test:coverage": "jest --coverage",
     "start:old": "node old/index.js",
     "register:commands": "ts-node src/scripts/registerSlashCommands.ts",
-    "register:commands:global": "ts-node src/scripts/registerSlashCommands.ts --global"
+    "register:commands:global": "ts-node src/scripts/registerSlashCommands.ts --global",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop bucksy",
+    "pm2:restart": "pm2 restart bucksy",
+    "pm2:reload": "pm2 reload bucksy",
+    "pm2:status": "pm2 status bucksy",
+    "pm2:logs": "pm2 logs bucksy",
+    "pm2:dev": "pm2 start ecosystem.config.js --env development",
+    "deploy": "./deploy.sh"
   },
   "author": "",
   "license": "ISC"

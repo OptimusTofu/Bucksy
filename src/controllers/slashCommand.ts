@@ -21,6 +21,11 @@ export function loadSlashCommands(): Collection<string, SlashCommand> {
     const commands = new Collection<string, SlashCommand>();
     const commandsPath = path.join(__dirname, '..', 'slashCommands');
 
+    if (!fs.existsSync(commandsPath)) {
+        console.warn(`Slash commands directory not found at ${commandsPath}`);
+        return commands;
+    }
+
     // Get all subdirectories in the commands directory
     const commandFolders = fs.readdirSync(commandsPath);
 
@@ -34,23 +39,34 @@ export function loadSlashCommands(): Collection<string, SlashCommand> {
         // Get all command files in the folder
         const commandFiles = fs
             .readdirSync(folderPath)
-            .filter(file => file.endsWith('.js') || file.endsWith('.ts'));
+            .filter(file => file.endsWith('.js'));
 
         // Loop through each command file
         for (const file of commandFiles) {
-            const filePath = path.join(folderPath, file);
-            const command: SlashCommand = require(filePath).default;
+            try {
+                const filePath = path.join(folderPath, file);
+                const command = require(filePath).default;
 
-            if (!command.data) {
-                console.warn(`The command at ${filePath} is missing a required "data" property.`);
-                continue;
+                if (!command) {
+                    console.warn(`The command at ${filePath} has no default export.`);
+                    continue;
+                }
+
+                if (!command.data) {
+                    console.warn(`The command at ${filePath} is missing a required "data" property.`);
+                    continue;
+                }
+
+                // Add the command to the collection
+                commands.set(command.data.name, command);
+                console.log(`Loaded slash command: ${command.data.name}`);
+            } catch (error) {
+                console.error(`Error loading slash command file ${file}:`, error);
             }
-
-            // Add the command to the collection
-            commands.set(command.data.name, command);
         }
     }
 
+    console.log(`Loaded ${commands.size} slash commands.`);
     return commands;
 }
 

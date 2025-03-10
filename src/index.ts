@@ -1,5 +1,6 @@
 import { Client, Collection, GatewayIntentBits, Events } from 'discord.js';
 import * as fs from 'fs';
+import * as path from 'path';
 import * as dotenv from 'dotenv';
 import * as config from '../config.json';
 import * as DatabaseController from './controllers/database';
@@ -24,35 +25,69 @@ const bot = new BucksyClient({
 // Set bot configuration
 bot.config = config;
 
-// Load commands
-const commands = fs.readdirSync('./src/commands');
-for (const folder of commands) {
-    const commandFiles = fs
-        .readdirSync(`./src/commands/${folder}`)
-        .filter((file) => file.endsWith('.js') || file.endsWith('.ts'));
+// Determine the base directory for commands
+// In production (compiled JS), we should look in the current directory
+// In development (TS), we should look in the src directory
+const baseDir = path.join(__dirname);
 
-    for (const file of commandFiles) {
-        const command = require(`./commands/${folder}/${file}`).default;
-        bot.commands.set(command.name, command);
+// Load commands
+const commandsDir = path.join(baseDir, 'commands');
+if (fs.existsSync(commandsDir)) {
+    const commandFolders = fs.readdirSync(commandsDir);
+
+    for (const folder of commandFolders) {
+        const folderPath = path.join(commandsDir, folder);
+
+        // Skip if not a directory
+        if (!fs.statSync(folderPath).isDirectory()) continue;
+
+        const commandFiles = fs
+            .readdirSync(folderPath)
+            .filter((file) => file.endsWith('.js'));
+
+        for (const file of commandFiles) {
+            const filePath = path.join(folderPath, file);
+            const command = require(filePath).default;
+
+            if (command) {
+                bot.commands.set(command.name, command);
+                console.log(`Loaded command: ${command.name}`);
+            } else {
+                console.warn(`Command at ${filePath} has no default export`);
+            }
+        }
     }
+} else {
+    console.warn(`Commands directory not found at ${commandsDir}`);
 }
 
 // Load slash commands
 bot.slashCommands = SlashCommandController.loadSlashCommands();
 
 // Load events
-const eventFiles = fs
-    .readdirSync('./src/events')
-    .filter((file) => file.endsWith('.js') || file.endsWith('.ts'));
+const eventsDir = path.join(baseDir, 'events');
+if (fs.existsSync(eventsDir)) {
+    const eventFiles = fs
+        .readdirSync(eventsDir)
+        .filter((file) => file.endsWith('.js'));
 
-for (const file of eventFiles) {
-    const event = require(`./events/${file}`).default;
+    for (const file of eventFiles) {
+        const filePath = path.join(eventsDir, file);
+        const event = require(filePath).default;
 
-    if (event.once) {
-        bot.once(event.name, (...args) => event.execute(...args, bot));
-    } else {
-        bot.on(event.name, (...args) => event.execute(...args, bot));
+        if (event) {
+            if (event.once) {
+                bot.once(event.name, (...args) => event.execute(...args, bot));
+            } else {
+                bot.on(event.name, (...args) => event.execute(...args, bot));
+            }
+            console.log(`Loaded event: ${event.name}`);
+        } else {
+            console.warn(`Event at ${filePath} has no default export`);
+        }
     }
+} else {
+    console.warn(`Events directory not found at ${eventsDir}`);
 }
 
 // Add interaction create event handler
