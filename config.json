@@ -1,18 +1,31 @@
 {
-  "prefix": ["?", "!", "."],
+  "prefix": [
+    "?",
+    "!",
+    "."
+  ],
   "mongoDBURL": "mongodb://localhost:27017/",
   "mongoDBName": "bucksy",
   "botName": "Bucksy",
   "aiID": "326eeaedc9ca4d92b16848f0962b2d78",
   "guildID": "390210848942981123",
   "qotdTime": "0 0 8 * * *",
+  "qotdTimezone": "America/New_York",
   "qotdURL": "https://www.reddit.com/r/AskReddit/",
   "guessMsg": "Who's that Pokemon?",
   "guessTime": "0 30 9-21 * * *",
   "startingPoints": 500,
   "verifiedRole": true,
-  "modRoles": ["moderator", "administrative", "bots"],
-  "teams": ["instinct", "mystic", "valor"],
+  "modRoles": [
+    "moderator",
+    "administrative",
+    "bots"
+  ],
+  "teams": [
+    "instinct",
+    "mystic",
+    "valor"
+  ],
   "channels": {
     "admin": {
       "id": "392547781098733568",

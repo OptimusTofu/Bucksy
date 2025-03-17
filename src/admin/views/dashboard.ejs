@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en" class="light-theme">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bucksy Admin - Dashboard<%= typeof username !=='undefined' ? ' | ' + username : '' %>
+    </title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet">
+    <link href="/css/dark-theme.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #f3f4f6;
+        }
+
+        .sortable-chosen {
+            background-color: #f9fafb;
+        }
+
+        .sortable-drag {
+            opacity: 0.8;
+        }
+
+        .priority-handle {
+            cursor: grab;
+            padding: 0.5rem;
+            color: #6b7280;
+        }
+
+        .priority-handle:hover {
+            color: #4f46e5;
+        }
+
+        .priority-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background-color: #e5e7eb;
+            color: #374151;
+            margin-right: 0.5rem;
+        }
+
+        .priority-high {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .priority-medium {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .priority-low {
+            background-color: #ecfdf5;
+            color: #065f46;
+        }
+
+        .save-priorities-btn {
+            position: sticky;
+            bottom: 1rem;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <h1 class="logo">Bucksy Admin</h1>
+                    </div>
+                    <div class="ml-10 flex items-center space-x-4">
+                        <a href="#qotd"
+                            class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">QOTD</a>
+                        <a href="#stats"
+                            class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Statistics</a>
+                        <a href="#settings"
+                            class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Settings</a>
+                        <a href="#users"
+                            class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Users</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="statusIndicator" class="text-sm text-gray-500">Loading...</span>
+                    <div class="theme-toggle-container flex items-center">
+                        <span class="text-sm text-gray-600 mr-2">Theme</span>
+                        <div id="themeToggle" class="theme-toggle">
+                            <span class="theme-toggle-icon sun"><i class="fas fa-sun"></i></span>
+                            <span class="theme-toggle-icon moon"><i class="fas fa-moon"></i></span>
+                        </div>
+                    </div>
+                    <span class="text-sm text-gray-600"><i class="fas fa-user mr-1"></i>
+                        <%= typeof username !=='undefined' ? username : 'Admin' %>
+                    </span>
+                    <a href="/logout" class="text-gray-600 hover:text-gray-900">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Dashboard Overview -->
+        <div class="px-4 py-6 sm:px-0 mb-8">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-medium mb-4">Dashboard Overview</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-indigo-50 p-4 rounded-lg">
+                        <h3 class="text-sm font-medium text-indigo-800">Total Questions</h3>
+                        <p id="totalQuestions" class="text-2xl font-bold text-indigo-600">-</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h3 class="text-sm font-medium text-green-800">Questions Used</h3>
+                        <p id="questionsUsed" class="text-2xl font-bold text-green-600">-</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <h3 class="text-sm font-medium text-purple-800">Last Question Posted</h3>
+                        <p id="lastQuestionDate" class="text-2xl font-bold text-purple-600">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions Section -->
+        <div id="qotd" class="px-4 py-6 sm:px-0 mb-8">
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-medium">Questions of the Day</h2>
+                    <div class="flex items-center space-x-2">
+                        <span id="questionCount" class="text-sm text-gray-500">0 questions</span>
+                        <button id="refreshButton" class="text-indigo-600 hover:text-indigo-900">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Add New Question -->
+                <div class="mb-6">
+                    <form id="addQuestionForm" class="flex gap-4">
+                        <input type="text" id="newQuestion" class="form-input flex-1"
+                            placeholder="Enter a new question">
+                        <button type="submit" class="btn-primary">
+                            Add Question
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Filter Options -->
+                <div class="mb-6 flex flex-wrap gap-4">
+                    <div class="flex items-center">
+                        <label for="filterStatus" class="mr-2 text-sm text-gray-600">Status:</label>
+                        <select id="filterStatus"
+                            class="form-select rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="all">All</option>
+                            <option value="used">Used</option>
+                            <option value="unused">Unused</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center">
+                        <label for="sortBy" class="mr-2 text-sm text-gray-600">Sort by:</label>
+                        <select id="sortBy"
+                            class="form-select rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="priority">Priority</option>
+                            <option value="newest">Newest</option>
+                            <option value="oldest">Oldest</option>
+                            <option value="alphabetical">Alphabetical</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center ml-auto">
+                        <input type="text" id="searchQuestions" class="form-input" placeholder="Search questions...">
+                    </div>
+                </div>
+
+                <!-- Questions List -->
+                <div class="space-y-4">
+                    <div id="questionsList" class="divide-y divide-gray-200">
+                        <!-- Questions will be loaded here -->
+                        <div class="py-4 text-center text-gray-500">Loading questions...</div>
+                    </div>
+                    <button id="savePrioritiesBtn" class="btn-primary save-priorities-btn">Save Question
+                        Priorities</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Section -->
+        <div id="stats" class="px-4 py-6 sm:px-0 mb-8">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-medium mb-6">Statistics</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-md font-medium mb-4">Questions Added Over Time</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg h-64 flex items-center justify-center">
+                            <p class="text-gray-500">Chart will be displayed here</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-md font-medium mb-4">Question Usage</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg h-64 flex items-center justify-center">
+                            <p class="text-gray-500">Chart will be displayed here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings" class="px-4 py-6 sm:px-0">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-medium mb-6">Settings</h2>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-md font-medium mb-4">QOTD Schedule</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="qotdTime" class="block text-sm font-medium text-gray-700 mb-1">Time (24h
+                                    format)</label>
+                                <input type="time" id="qotdTime" class="form-input" value="08:00">
+                            </div>
+                            <div>
+                                <label for="qotdTimezone"
+                                    class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                                <select id="qotdTimezone"
+                                    class="form-select rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="America/New_York">America/New_York</option>
+                                    <option value="America/Chicago">America/Chicago</option>
+                                    <option value="America/Denver">America/Denver</option>
+                                    <option value="America/Los_Angeles">America/Los_Angeles</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button id="saveSettings" class="btn-primary">Save Settings</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management Section -->
+        <div id="users" class="px-4 py-6 sm:px-0">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-lg font-medium mb-6">User Management</h2>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-md font-medium mb-4">Create Admin User</h3>
+                        <form id="createAdminForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="newUsername"
+                                        class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                    <input type="text" id="newUsername" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label for="newPassword"
+                                        class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <input type="password" id="newPassword" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label for="confirmPassword"
+                                        class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                                    <input type="password" id="confirmPassword" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label for="userId" class="block text-sm font-medium text-gray-700 mb-1">Discord
+                                        User ID (Optional)</label>
+                                    <input type="text" id="userId" class="form-input">
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn-primary">Create Admin User</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-md font-medium mb-4">Change Password</h3>
+                        <form id="changePasswordForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="currentPassword"
+                                        class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                                    <input type="password" id="currentPassword" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label for="newUserPassword"
+                                        class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                    <input type="password" id="newUserPassword" class="form-input" required>
+                                </div>
+                                <div>
+                                    <label for="confirmUserPassword"
+                                        class="block text-sm font-medium text-gray-700 mb-1">Confirm New
+                                        Password</label>
+                                    <input type="password" id="confirmUserPassword" class="form-input" required>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn-primary">Change Password</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Question Modal -->
+    <div id="editModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-6 max-w-lg w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium">Edit Question</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-500">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <form id="editQuestionForm">
+                <input type="hidden" id="editQuestionId">
+                <div class="mb-4">
+                    <label for="editQuestionText" class="block text-sm font-medium text-gray-700 mb-1">Question
+                        Text</label>
+                    <textarea id="editQuestionText" class="form-input" rows="3"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="editQuestionUsed" class="form-checkbox h-4 w-4 text-indigo-600">
+                        <span class="ml-2 text-sm text-gray-700">Mark as used</span>
+                    </label>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancelEdit"
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        // DOM Elements
+        const questionsList = document.getElementById('questionsList');
+        const addQuestionForm = document.getElementById('addQuestionForm');
+        const newQuestionInput = document.getElementById('newQuestion');
+        const refreshButton = document.getElementById('refreshButton');
+        const questionCount = document.getElementById('questionCount');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+        const editModal = document.getElementById('editModal');
+        const closeModal = document.getElementById('closeModal');
+        const cancelEdit = document.getElementById('cancelEdit');
+        const editQuestionForm = document.getElementById('editQuestionForm');
+        const editQuestionId = document.getElementById('editQuestionId');
+        const editQuestionText = document.getElementById('editQuestionText');
+        const editQuestionUsed = document.getElementById('editQuestionUsed');
+        const filterStatus = document.getElementById('filterStatus');
+        const sortBy = document.getElementById('sortBy');
+        const searchQuestions = document.getElementById('searchQuestions');
+        const totalQuestions = document.getElementById('totalQuestions');
+        const questionsUsed = document.getElementById('questionsUsed');
+        const lastQuestionDate = document.getElementById('lastQuestionDate');
+        const saveSettings = document.getElementById('saveSettings');
+        const qotdTime = document.getElementById('qotdTime');
+        const qotdTimezone = document.getElementById('qotdTimezone');
+        const savePrioritiesBtn = document.getElementById('savePrioritiesBtn');
+
+        // Sortable instance
+        let sortableList = null;
+        let prioritiesChanged = false;
+
+        // Initialize Sortable
+        function initSortable() {
+            if (sortableList) {
+                sortableList.destroy();
+            }
+
+            sortableList = new Sortable(questionsList, {
+                animation: 150,
+                handle: '.priority-handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function () {
+                    // Show save button when order changes
+                    prioritiesChanged = true;
+                    savePrioritiesBtn.style.display = 'block';
+
+                    // Update priority indicators
+                    updatePriorityIndicators();
+                }
+            });
+        }
+
+        // Update priority indicators after drag and drop
+        function updatePriorityIndicators() {
+            const items = questionsList.querySelectorAll('.question-item');
+
+            items.forEach((item, index) => {
+                const priorityIndicator = item.querySelector('.priority-indicator');
+                let priorityClass = '';
+                let priorityText = '';
+
+                if (index < 5) {
+                    priorityClass = 'priority-high';
+                    priorityText = 'High';
+                } else if (index < 10) {
+                    priorityClass = 'priority-medium';
+                    priorityText = 'Medium';
+                } else {
+                    priorityClass = 'priority-low';
+                    priorityText = 'Low';
+                }
+
+                // Remove all priority classes
+                priorityIndicator.classList.remove('priority-high', 'priority-medium', 'priority-low');
+                // Add the new priority class
+                priorityIndicator.classList.add(priorityClass);
+                // Update the text
+                priorityIndicator.textContent = `${priorityText} Priority`;
+
+                // Update data-priority attribute
+                item.setAttribute('data-priority', index);
+            });
+        }
+
+        // Save priorities
+        savePrioritiesBtn.addEventListener('click', async () => {
+            if (!prioritiesChanged) return;
+
+            try {
+                const items = questionsList.querySelectorAll('.question-item');
+                const priorities = Array.from(items).map((item, index) => ({
+                    id: item.getAttribute('data-id'),
+                    priority: index
+                }));
+
+                const response = await fetch('/api/questions/priorities', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ priorities }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update priorities');
+                }
+
+                const result = await response.json();
+                showNotification(`Priorities updated successfully! (${result.updatedCount} questions updated)`);
+
+                // Reset state
+                prioritiesChanged = false;
+                savePrioritiesBtn.style.display = 'none';
+
+                // Reload questions to get the updated priorities
+                loadQuestions();
+            } catch (error) {
+                console.error('Error saving priorities:', error);
+                showNotification('Failed to save priorities', 'error');
+            }
+        });
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            notificationText.textContent = message;
+            notification.style.backgroundColor = type === 'success' ? '#10b981' : '#ef4444';
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Update connection status
+        function updateStatus(isConnected) {
+            statusIndicator.textContent = isConnected ? 'Connected' : 'Disconnected';
+            statusIndicator.classList.remove(isConnected ? 'text-red-500' : 'text-green-500');
+            statusIndicator.classList.add(isConnected ? 'text-green-500' : 'text-red-500');
+        }
+
+        // Open edit modal
+        function openEditModal(question) {
+            editQuestionId.value = question._id;
+            editQuestionText.value = question.text;
+            editQuestionUsed.checked = question.used || false;
+            editModal.classList.remove('hidden');
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            editModal.classList.add('hidden');
+        }
+
+        // Filter and sort questions
+        function filterAndSortQuestions(questions) {
+            let filtered = [...questions];
+
+            // Apply status filter
+            if (filterStatus.value === 'used') {
+                filtered = filtered.filter(q => q.used);
+            } else if (filterStatus.value === 'unused') {
+                filtered = filtered.filter(q => !q.used);
+            }
+
+            // Apply search
+            const searchTerm = searchQuestions.value.toLowerCase().trim();
+            if (searchTerm) {
+                filtered = filtered.filter(q => q.text.toLowerCase().includes(searchTerm));
+            }
+
+            // Apply sorting
+            if (sortBy.value === 'priority') {
+                // Sort by priority (lower number = higher priority)
+                filtered.sort((a, b) => {
+                    // Handle undefined priorities
+                    const priorityA = a.priority !== undefined ? a.priority : Number.MAX_SAFE_INTEGER;
+                    const priorityB = b.priority !== undefined ? b.priority : Number.MAX_SAFE_INTEGER;
+                    return priorityA - priorityB;
+                });
+            } else if (sortBy.value === 'newest') {
+                filtered.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+            } else if (sortBy.value === 'oldest') {
+                filtered.sort((a, b) => new Date(a.addedAt) - new Date(b.addedAt));
+            } else if (sortBy.value === 'alphabetical') {
+                filtered.sort((a, b) => a.text.localeCompare(b.text));
+            }
+
+            return filtered;
+        }
+
+        // Update dashboard statistics
+        function updateDashboardStats(questions) {
+            const total = questions.length;
+            const used = questions.filter(q => q.used).length;
+
+            totalQuestions.textContent = total;
+            questionsUsed.textContent = used;
+
+            // Find the most recently used question
+            const usedQuestions = questions.filter(q => q.used);
+            if (usedQuestions.length > 0) {
+                const mostRecent = usedQuestions.sort((a, b) => new Date(b.usedAt || 0) - new Date(a.usedAt || 0))[0];
+                lastQuestionDate.textContent = mostRecent.usedAt ? new Date(mostRecent.usedAt).toLocaleDateString() : 'Unknown';
+            } else {
+                lastQuestionDate.textContent = 'Never';
+            }
+        }
+
+        // Render questions list
+        function renderQuestionsList(questions) {
+            const filtered = filterAndSortQuestions(questions);
+
+            if (filtered.length === 0) {
+                questionsList.innerHTML = '<div class="py-4 text-center text-gray-500">No questions found matching your criteria.</div>';
+                return;
+            }
+
+            questionCount.textContent = `${filtered.length} of ${questions.length} questions`;
+
+            questionsList.innerHTML = filtered.map((question, index) => {
+                // Determine priority class
+                let priorityClass = '';
+                let priorityText = '';
+
+                if (question.priority !== undefined) {
+                    if (question.priority < 5) {
+                        priorityClass = 'priority-high';
+                        priorityText = 'High';
+                    } else if (question.priority < 10) {
+                        priorityClass = 'priority-medium';
+                        priorityText = 'Medium';
+                    } else {
+                        priorityClass = 'priority-low';
+                        priorityText = 'Low';
+                    }
+                }
+
+                return `
+                <div class="py-4 flex justify-between items-center question-item" data-id="${question._id}" data-priority="${question.priority !== undefined ? question.priority : index}">
+                    <div class="priority-handle">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <span class="priority-indicator ${priorityClass}">${priorityText} Priority</span>
+                            <p class="text-sm text-gray-900">${question.text}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Added: ${new Date(question.addedAt).toLocaleDateString()} 
+                            ${question.used ?
+                        `• <span class="text-green-500">Used</span>${question.usedAt ? ` on ${new Date(question.usedAt).toLocaleDateString()}` : ''}` :
+                        '<span class="text-yellow-500">Unused</span>'}
+                        </p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="openEditModal(${JSON.stringify(question).replace(/"/g, '&quot;')})" 
+                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Edit
+                        </button>
+                        <button onclick="deleteQuestion('${question._id}')" 
+                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 btn-delete">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `}).join('');
+
+            // Initialize Sortable
+            initSortable();
+        }
+
+        // Load questions
+        let allQuestions = [];
+        async function loadQuestions() {
+            try {
+                questionsList.innerHTML = '<div class="py-4 text-center text-gray-500">Loading questions...</div>';
+
+                const response = await fetch('/api/questions');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch questions');
+                }
+
+                allQuestions = await response.json();
+                updateStatus(true);
+
+                if (allQuestions.length === 0) {
+                    questionsList.innerHTML = '<div class="py-4 text-center text-gray-500">No questions found. Add one above!</div>';
+                    questionCount.textContent = '0 questions';
+                    return;
+                }
+
+                updateDashboardStats(allQuestions);
+                renderQuestionsList(allQuestions);
+            } catch (error) {
+                console.error('Error loading questions:', error);
+                updateStatus(false);
+                questionsList.innerHTML = '<div class="py-4 text-center text-red-500">Failed to load questions. Please try again.</div>';
+            }
+        }
+
+        // Add new question
+        addQuestionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = newQuestionInput.value.trim();
+
+            if (!text) return;
+
+            try {
+                const response = await fetch('/api/questions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add question');
+                }
+
+                newQuestionInput.value = '';
+                showNotification('Question added successfully!');
+                loadQuestions();
+            } catch (error) {
+                console.error('Error adding question:', error);
+                showNotification('Failed to add question', 'error');
+            }
+        });
+
+        // Edit question
+        editQuestionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = editQuestionId.value;
+            const text = editQuestionText.value.trim();
+            const used = editQuestionUsed.checked;
+
+            if (!text) return;
+
+            try {
+                const response = await fetch(`/api/questions/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text, used }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update question');
+                }
+
+                closeEditModal();
+                showNotification('Question updated successfully!');
+                loadQuestions();
+            } catch (error) {
+                console.error('Error updating question:', error);
+                showNotification('Failed to update question', 'error');
+            }
+        });
+
+        // Delete question
+        async function deleteQuestion(id) {
+            if (!confirm('Are you sure you want to delete this question?')) return;
+
+            try {
+                const response = await fetch(`/api/questions/${id}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete question');
+                }
+
+                showNotification('Question deleted successfully!');
+                loadQuestions();
+            } catch (error) {
+                console.error('Error deleting question:', error);
+                showNotification('Failed to delete question', 'error');
+            }
+        }
+
+        // Save settings
+        saveSettings.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        qotdTime: qotdTime.value,
+                        qotdTimezone: qotdTimezone.value
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save settings');
+                }
+
+                showNotification('Settings saved successfully!');
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showNotification('Failed to save settings', 'error');
+            }
+        });
+
+        // Event listeners for filtering and sorting
+        filterStatus.addEventListener('change', () => renderQuestionsList(allQuestions));
+        sortBy.addEventListener('change', () => renderQuestionsList(allQuestions));
+        searchQuestions.addEventListener('input', () => renderQuestionsList(allQuestions));
+
+        // Modal event listeners
+        closeModal.addEventListener('click', closeEditModal);
+        cancelEdit.addEventListener('click', closeEditModal);
+
+        // Refresh button
+        refreshButton.addEventListener('click', loadQuestions);
+
+        // Load settings
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch settings');
+                }
+
+                const settings = await response.json();
+
+                // Convert cron format to time input (0 MM HH * * * -> HH:MM)
+                if (settings.qotdTime) {
+                    const cronParts = settings.qotdTime.split(' ');
+                    if (cronParts.length >= 3) {
+                        const hours = cronParts[2].padStart(2, '0');
+                        const minutes = cronParts[1].padStart(2, '0');
+                        qotdTime.value = `${hours}:${minutes}`;
+                    }
+                }
+
+                if (settings.qotdTimezone) {
+                    // Find the option with the matching value
+                    const option = Array.from(qotdTimezone.options).find(opt => opt.value === settings.qotdTimezone);
+                    if (option) {
+                        qotdTimezone.value = settings.qotdTimezone;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showNotification('Failed to load settings', 'error');
+            }
+        }
+
+        // Load questions and settings on page load
+        loadQuestions();
+        loadSettings();
+
+        // Check connection status periodically
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/questions');
+                updateStatus(response.ok);
+            } catch (error) {
+                updateStatus(false);
+            }
+        }, 30000);
+
+        // User Management
+        const createAdminForm = document.getElementById('createAdminForm');
+        const changePasswordForm = document.getElementById('changePasswordForm');
+
+        // Create admin user
+        createAdminForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const newUsername = document.getElementById('newUsername').value.trim();
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const userId = document.getElementById('userId').value.trim();
+
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                showNotification('Passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: newUsername,
+                        password: newPassword,
+                        userId: userId || undefined
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification('Admin user created successfully');
+                    createAdminForm.reset();
+                } else {
+                    showNotification(data.error || 'Failed to create admin user', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating admin user:', error);
+                showNotification('Failed to create admin user', 'error');
+            }
+        });
+
+        // Change password
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newUserPassword = document.getElementById('newUserPassword').value;
+            const confirmUserPassword = document.getElementById('confirmUserPassword').value;
+
+            // Validate passwords match
+            if (newUserPassword !== confirmUserPassword) {
+                showNotification('New passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users/password', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword: newUserPassword
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification('Password changed successfully');
+                    changePasswordForm.reset();
+                } else {
+                    showNotification(data.error || 'Failed to change password', 'error');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                showNotification('Failed to change password', 'error');
+            }
+        });
+
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const themeToggle = document.getElementById('themeToggle');
+            const htmlElement = document.documentElement;
+
+            // Check for saved theme preference or use preferred color scheme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                htmlElement.className = savedTheme;
+            } else {
+                // Check if user prefers dark mode
+                const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                htmlElement.className = prefersDarkMode ? 'dark-theme' : 'light-theme';
+            }
+
+            // Toggle theme when the button is clicked
+            themeToggle.addEventListener('click', function () {
+                if (htmlElement.classList.contains('light-theme')) {
+                    htmlElement.classList.remove('light-theme');
+                    htmlElement.classList.add('dark-theme');
+                    localStorage.setItem('theme', 'dark-theme');
+                } else {
+                    htmlElement.classList.remove('dark-theme');
+                    htmlElement.classList.add('light-theme');
+                    localStorage.setItem('theme', 'light-theme');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

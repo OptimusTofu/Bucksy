@@ -11,8 +11,10 @@ import {
     DeleteOperationResult,
     UserResult,
     ShinyResult,
-    QuestionResult
+    QuestionResult,
+    DatabaseResult
 } from '../types/database';
+import { ObjectId } from 'mongodb';
 
 // Load environment variables
 dotenv.config();
@@ -67,7 +69,7 @@ export async function initializeDB(): Promise<boolean> {
         try {
             await collections.users.createIndex({ user_id: 1 }, { unique: true });
             await collections.shinies.createIndex({ pokemon: 1 }, { unique: true });
-            await collections.questions.createIndex({ question: 1 }, { unique: true });
+            await collections.questions.createIndex({ text: 1 }, { unique: true });
         } catch (error) {
             if (error instanceof MongoServerError) {
                 if (error.code === 13) { // Permission denied
@@ -162,6 +164,89 @@ export async function userExists(user_id: string): Promise<boolean> {
     }
 }
 
+/**
+ * Find a user by username
+ * @param username The username to search for
+ * @returns The user object or null if not found
+ */
+export async function findUserByUsername(username: string): Promise<User | null> {
+    try {
+        const query = { username: username };
+        const result = await collections.users.findOne<User>(query);
+        return result;
+    } catch (error) {
+        console.error("Error finding user by username:", error);
+        return null;
+    }
+}
+
+/**
+ * Check if a user has admin role
+ * @param user_id The user ID to check
+ * @returns True if the user has admin role, false otherwise
+ */
+export async function isAdmin(user_id: string): Promise<boolean> {
+    try {
+        const query = { id: user_id, role: 'admin' };
+        const result = await collections.users.findOne<User>(query);
+        return !!result;
+    } catch (error) {
+        console.error("Error checking if user is admin:", error);
+        return false;
+    }
+}
+
+/**
+ * Create an admin user
+ * @param username The admin username
+ * @param passwordHash The hashed password
+ * @param user_id Optional user ID (Discord ID)
+ * @returns Result of the operation
+ */
+export async function createAdminUser(username: string, passwordHash: string, user_id?: string): Promise<UserResult> {
+    try {
+        const obj: User = {
+            id: user_id || `admin_${Date.now()}`,
+            username,
+            passwordHash,
+            role: 'admin',
+            points: 0,
+            registeredAt: new Date()
+        };
+        const result = await collections.users.insertOne(obj);
+        return {
+            success: true,
+            data: obj
+        };
+    } catch (error) {
+        console.error("Error creating admin user:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+/**
+ * Update user password
+ * @param username The username
+ * @param passwordHash The new password hash
+ * @returns True if successful, false otherwise
+ */
+export async function updateUserPassword(username: string, passwordHash: string): Promise<boolean> {
+    try {
+        const filter = { username };
+        const update = {
+            $set: { passwordHash, lastActive: new Date() }
+        };
+        const result = await collections.users.updateOne(filter, update);
+        return result.modifiedCount > 0;
+    } catch (error) {
+        console.error("Error updating user password:", error);
+        return false;
+    }
+}
+
 // Shiny operations
 export async function addShiny(pokemon: string, addedBy?: string): Promise<ShinyResult> {
     try {
@@ -226,10 +311,21 @@ export async function getShinies(): Promise<string> {
 // Question operations
 export async function addQuestion(question: string): Promise<QuestionResult> {
     try {
+        // Get the highest priority number to set new question as lowest priority
+        const highestPriorityQuestion = await collections.questions.find<Question>({})
+            .sort({ priority: -1 })
+            .limit(1)
+            .toArray();
+
+        const nextPriority = highestPriorityQuestion.length > 0 &&
+            highestPriorityQuestion[0].priority !== undefined ?
+            highestPriorityQuestion[0].priority + 1 : 0;
+
         const obj: Question = {
             text: question,
             addedAt: new Date(),
-            used: false
+            used: false,
+            priority: nextPriority
         };
         await collections.questions.insertOne(obj);
         return {
@@ -253,5 +349,138 @@ export async function questionExists(question: string): Promise<boolean> {
     } catch (error) {
         console.error("Error checking if question exists:", error);
         return false;
+    }
+}
+
+export async function getAllQuestions(): Promise<Question[]> {
+    try {
+        const questions = await collections.questions.find<Question>({}).toArray();
+        return questions;
+    } catch (error) {
+        console.error("Error fetching all questions:", error);
+        throw error;
+    }
+}
+
+export async function deleteQuestion(id: string): Promise<DatabaseResult<{ deletedCount: number }>> {
+    try {
+        const result = await collections.questions.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 0) {
+            return {
+                success: false,
+                error: 'Question not found'
+            };
+        }
+        return {
+            success: true,
+            data: { deletedCount: result.deletedCount }
+        };
+    } catch (error) {
+        console.error("Error deleting question:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+export async function updateQuestion(id: string, updates: { text?: string; used?: boolean; priority?: number }): Promise<DatabaseResult<Question>> {
+    try {
+        const updateData: any = {};
+
+        if (updates.text !== undefined) {
+            updateData.text = updates.text;
+        }
+
+        if (updates.used !== undefined) {
+            updateData.used = updates.used;
+            if (updates.used) {
+                updateData.usedAt = new Date();
+            }
+        }
+
+        if (updates.priority !== undefined) {
+            updateData.priority = updates.priority;
+        }
+
+        const result = await collections.questions.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            { $set: updateData },
+            { returnDocument: 'after' }
+        );
+
+        if (!result) {
+            return {
+                success: false,
+                error: 'Question not found'
+            };
+        }
+
+        return {
+            success: true,
+            data: result
+        };
+    } catch (error) {
+        console.error("Error updating question:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+/**
+ * Update the priorities of multiple questions at once
+ * @param priorityUpdates Array of objects with question ID and new priority
+ * @returns Success status and any errors
+ */
+export async function updateQuestionPriorities(
+    priorityUpdates: Array<{ id: string; priority: number }>
+): Promise<DatabaseResult<{ updatedCount: number }>> {
+    try {
+        let updatedCount = 0;
+
+        // Use a transaction or bulk operation if available
+        const bulkOps = priorityUpdates.map(update => ({
+            updateOne: {
+                filter: { _id: new ObjectId(update.id) },
+                update: { $set: { priority: update.priority } }
+            }
+        }));
+
+        if (bulkOps.length > 0) {
+            const result = await collections.questions.bulkWrite(bulkOps);
+            updatedCount = result.modifiedCount;
+        }
+
+        return {
+            success: true,
+            data: { updatedCount }
+        };
+    } catch (error) {
+        console.error("Error updating question priorities:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
+}
+
+/**
+ * Get the next question to use based on priority
+ * @returns The next question to use or null if none available
+ */
+export async function getNextQuestionByPriority(): Promise<Question | null> {
+    try {
+        // Get the unused question with the lowest priority number (highest priority)
+        const nextQuestion = await collections.questions.find<Question>({ used: false })
+            .sort({ priority: 1 })
+            .limit(1)
+            .toArray();
+
+        return nextQuestion.length > 0 ? nextQuestion[0] : null;
+    } catch (error) {
+        console.error("Error getting next question by priority:", error);
+        return null;
     }
 } 

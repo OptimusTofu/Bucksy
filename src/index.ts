@@ -7,6 +7,7 @@ import * as DatabaseController from './controllers/database';
 import * as SlashCommandController from './controllers/slashCommand';
 import { registerCommands } from './util/registerCommands';
 import { BucksyClient, BotCommand, BotEvent } from './types';
+import { startAdminServer } from './admin/server';
 
 // Load environment variables
 dotenv.config();
@@ -124,6 +125,9 @@ async function startBot() {
                 bot.user?.id || ''
             );
         }
+
+        // Start admin server
+        startAdminServer(bot);
     } catch (error) {
         console.error("Error starting the bot:", error);
         process.exit(1);

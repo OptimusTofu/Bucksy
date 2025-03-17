@@ -3,6 +3,7 @@ import { BucksyClient } from '../types';
 import * as config from '../../config.json';
 import * as cron from 'cron';
 import axios from 'axios';
+import * as DatabaseController from './database';
 
 // Store the cron job
 let qotdJob: cron.CronJob | null = null;
@@ -32,12 +33,61 @@ async function fetchRandomQuestion(): Promise<string> {
             return 'What is your favorite Pokémon and why?';
         }
 
-        // Pick a random question
-        const randomIndex = Math.floor(Math.random() * questions.length);
-        return questions[randomIndex].data.title;
+        // Try to find an unused question
+        for (let i = 0; i < questions.length; i++) {
+            const randomIndex = Math.floor(Math.random() * questions.length);
+            const question = questions[randomIndex].data.title;
+
+            // Check if question has been used before
+            const exists = await DatabaseController.questionExists(question);
+            if (!exists) {
+                // Add the question to the database
+                await DatabaseController.addQuestion(question);
+                return question;
+            }
+        }
+
+        // If all questions have been used, return a fallback
+        return 'What is your favorite Pokémon and why?';
     } catch (error) {
         console.error('Error fetching question:', error);
         return 'If you could have any Pokémon as a pet, which would you choose and why?';
+    }
+}
+
+/**
+ * Fetches a question from the database based on priority
+ * @returns A question based on priority
+ */
+async function getQuestionFromDatabase(): Promise<string | null> {
+    try {
+        // First try to get the highest priority unused question
+        const priorityQuestion = await DatabaseController.getNextQuestionByPriority();
+
+        if (priorityQuestion) {
+            // Mark the question as used
+            await DatabaseController.updateQuestion(priorityQuestion._id.toString(), { used: true });
+            return priorityQuestion.text;
+        }
+
+        // If no unused questions, get all questions
+        const questions = await DatabaseController.getAllQuestions();
+
+        if (questions.length > 0) {
+            // If all questions have been used, reset one random question and use it
+            const randomIndex = Math.floor(Math.random() * questions.length);
+            const question = questions[randomIndex];
+
+            // Mark the question as used with a new timestamp
+            await DatabaseController.updateQuestion(question._id.toString(), { used: true });
+
+            return question.text;
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error getting question from database:', error);
+        return null;
     }
 }
 
@@ -61,8 +111,13 @@ async function postQuestion(client: BucksyClient): Promise<void> {
             return;
         }
 
-        // Fetch a random question
-        const question = await fetchRandomQuestion();
+        // First try to get a question from the database
+        let question = await getQuestionFromDatabase();
+
+        // If no question is found in the database, fetch one from Reddit
+        if (!question) {
+            question = await fetchRandomQuestion();
+        }
 
         // Post the question
         await (channel as TextChannel).send(`**Question of the Day**: ${question}`);
@@ -92,16 +147,18 @@ export const start = async (client: BucksyClient): Promise<void> => {
             () => postQuestion(client),
             null,
             true,
-            'America/New_York'
+            config.qotdTimezone || 'America/New_York'
         );
 
         // Start the job
         qotdJob.start();
 
-        console.log(`Question of the Day scheduled for ${config.qotdTime}`);
+        console.log(`Question of the Day scheduled for ${config.qotdTime} (${config.qotdTimezone || 'America/New_York'})`);
 
-        // Post an initial question
-        await postQuestion(client);
+        // Post an initial question if requested
+        if (process.env.POST_INITIAL_QOTD === 'true') {
+            await postQuestion(client);
+        }
     } catch (error) {
         console.error('Error starting Question of the Day:', error);
     }

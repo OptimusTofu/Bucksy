@@ -15,6 +15,15 @@ export interface User extends Document {
 
     /** Last time the user used a command */
     lastActive?: Date;
+
+    /** User's role (admin, user, etc.) */
+    role?: string;
+
+    /** User's username for admin login */
+    username?: string;
+
+    /** User's password hash for admin login */
+    passwordHash?: string;
 }
 
 /**
@@ -43,6 +52,12 @@ export interface Question extends Document {
 
     /** Whether the question has been used */
     used?: boolean;
+
+    /** When the question was last used */
+    usedAt?: Date;
+
+    /** Priority of the question (lower number = higher priority) */
+    priority?: number;
 }
 
 /**
