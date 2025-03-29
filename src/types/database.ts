@@ -24,6 +24,13 @@ export interface User extends Document {
 
     /** User's password hash for admin login */
     passwordHash?: string;
+
+    /** User's warnings */
+    warnings?: Array<{
+        reason: string;
+        timestamp: Date;
+        moderator_id: string;
+    }>;
 }
 
 /**
@@ -61,6 +68,37 @@ export interface Question extends Document {
 }
 
 /**
+ * Interface for server settings document in the database
+ */
+export interface ServerSettings extends Document {
+    /** Discord server ID */
+    guildId: string;
+
+    /** Welcome channel ID */
+    welcomeChannel?: string;
+
+    /** Log channel ID */
+    logChannel?: string;
+
+    /** Mod channel ID */
+    modChannel?: string;
+}
+
+/**
+ * Interface for automod settings document in the database
+ */
+export interface AutomodSettings extends Document {
+    /** Discord server ID */
+    guildId: string;
+
+    /** Whether automod is enabled */
+    enabled: boolean;
+
+    /** List of banned words */
+    words: string[];
+}
+
+/**
  * Interface for database collections
  */
 export interface DatabaseCollections {
@@ -72,12 +110,18 @@ export interface DatabaseCollections {
 
     /** Questions collection */
     questions: Collection<Question>;
+
+    /** Server settings collection */
+    servers: Collection<ServerSettings>;
+
+    /** Automod settings collection */
+    automod: Collection<AutomodSettings>;
 }
 
 /**
  * Interface for database operations result
  */
-export interface DatabaseResult<T> {
+export interface DatabaseResult<T = void> {
     /** Whether the operation was successful */
     success: boolean;
 

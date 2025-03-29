@@ -8,11 +8,11 @@ const command: SlashCommand = {
         .setName('spend')
         .setDescription('Spend a specified amount of your points for a prize')
         .addIntegerOption(option =>
-            option.setName('amount')
+            option
+                .setName('amount')
                 .setDescription('The amount of points to spend')
                 .setRequired(true)
-                .setMinValue(1)
-        ) as SlashCommandBuilder,
+                .setMinValue(1)) as SlashCommandBuilder,
 
     options: {
         guildOnly: true,

@@ -22,6 +22,12 @@ export interface SlashCommandOptions {
 
     /** Required permissions to use the command */
     permissions?: PermissionResolvable[];
+
+    /** Specific channel the command should be used in */
+    channel?: {
+        id: string;
+        name: string;
+    };
 }
 
 /**

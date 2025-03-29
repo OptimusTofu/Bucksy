@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import bcrypt from 'bcrypt';
 import { BucksyClient } from '../types';
 import * as DatabaseController from '../controllers/database';
@@ -22,16 +23,49 @@ const port = process.env.ADMIN_PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Session configuration
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/bucksy',
+        ttl: 14 * 24 * 60 * 60, // 14 days
+        crypto: {
+            secret: process.env.SESSION_SECRET || 'your-secret-key'
+        },
+        autoRemove: 'native', // Default
+        touchAfter: 24 * 3600 // 1 day (in seconds)
+    }),
+    cookie: {
+        secure: isProduction,
+        maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days in milliseconds
+        sameSite: isProduction ? 'none' : 'lax',
+        httpOnly: true
+    }
 }));
 
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Debug routes for troubleshooting
+app.get('/debug/static-paths', (req: Request, res: Response) => {
+    res.json({
+        staticPath: path.join(__dirname, 'public'),
+        viewsPath: path.join(__dirname, 'views'),
+        cssPath: path.join(__dirname, 'public', 'css'),
+        dirExists: {
+            staticDir: fs.existsSync(path.join(__dirname, 'public')),
+            cssDir: fs.existsSync(path.join(__dirname, 'public', 'css')),
+            stylesCSS: fs.existsSync(path.join(__dirname, 'public', 'css', 'styles.css')),
+            darkThemeCSS: fs.existsSync(path.join(__dirname, 'public', 'css', 'dark-theme.css'))
+        },
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
 
 // Authentication middleware
 const isAuthenticated = (req: RequestWithSession, res: Response, next: NextFunction) => {
@@ -44,7 +78,10 @@ const isAuthenticated = (req: RequestWithSession, res: Response, next: NextFunct
 
 // Routes
 app.get('/login', (req: RequestWithSession, res: Response) => {
-    res.render('login', { error: null });
+    res.render('login', {
+        error: null,
+        isProduction: process.env.NODE_ENV === 'production'
+    });
 });
 
 app.post('/login', async (req: RequestWithSession, res: Response) => {
@@ -56,7 +93,10 @@ app.post('/login', async (req: RequestWithSession, res: Response) => {
 
         // Check if user exists and has admin role
         if (!user || user.role !== 'admin' || !user.passwordHash) {
-            res.render('login', { error: 'Invalid username or password' });
+            res.render('login', {
+                error: 'Invalid username or password',
+                isProduction: process.env.NODE_ENV === 'production'
+            });
             return;
         }
 
@@ -72,11 +112,17 @@ app.post('/login', async (req: RequestWithSession, res: Response) => {
             // Redirect to dashboard
             res.redirect('/');
         } else {
-            res.render('login', { error: 'Invalid username or password' });
+            res.render('login', {
+                error: 'Invalid username or password',
+                isProduction: process.env.NODE_ENV === 'production'
+            });
         }
     } catch (error) {
         console.error('Login error:', error);
-        res.render('login', { error: 'An error occurred during login' });
+        res.render('login', {
+            error: 'An error occurred during login',
+            isProduction: process.env.NODE_ENV === 'production'
+        });
     }
 });
 
@@ -88,7 +134,10 @@ app.get('/logout', (req: RequestWithSession, res: Response) => {
 
 // Protected routes
 app.get('/', isAuthenticated, (req: RequestWithSession, res: Response) => {
-    res.render('dashboard', { username: req.session.username });
+    res.render('dashboard', {
+        username: req.session.username,
+        isProduction: process.env.NODE_ENV === 'production'
+    });
 });
 
 // Admin user management API

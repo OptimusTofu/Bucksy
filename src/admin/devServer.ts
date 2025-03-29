@@ -3,6 +3,7 @@ import * as DatabaseController from '../controllers/database';
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import * as fs from 'fs';
 
 // Load environment variables
@@ -24,11 +25,28 @@ const port = process.env.ADMIN_PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Session configuration
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/bucksy',
+        ttl: 14 * 24 * 60 * 60, // 14 days
+        crypto: {
+            secret: process.env.SESSION_SECRET || 'your-secret-key'
+        },
+        autoRemove: 'native', // Default
+        touchAfter: 24 * 3600 // 1 day (in seconds)
+    }),
+    cookie: {
+        secure: isProduction,
+        maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days in milliseconds
+        sameSite: isProduction ? 'none' : 'lax',
+        httpOnly: true
+    }
 }));
 
 // View engine setup
@@ -46,7 +64,10 @@ const isAuthenticated = (req: RequestWithSession, res: Response, next: NextFunct
 
 // Routes
 app.get('/login', (req: RequestWithSession, res: Response) => {
-    res.render('login', { error: null });
+    res.render('login', {
+        error: null,
+        isProduction: process.env.NODE_ENV === 'production'
+    });
 });
 
 app.post('/login', (req: RequestWithSession, res: Response) => {
@@ -56,7 +77,10 @@ app.post('/login', (req: RequestWithSession, res: Response) => {
         req.session.username = username;
         res.redirect('/');
     } else {
-        res.render('login', { error: 'Invalid username or password' });
+        res.render('login', {
+            error: 'Invalid username or password',
+            isProduction: process.env.NODE_ENV === 'production'
+        });
     }
 });
 
@@ -68,7 +92,10 @@ app.get('/logout', (req: RequestWithSession, res: Response) => {
 
 // Protected routes
 app.get('/', isAuthenticated, (req: RequestWithSession, res: Response) => {
-    res.render('dashboard', { username: req.session.username || 'Admin' });
+    res.render('dashboard', {
+        username: req.session.username || 'Admin',
+        isProduction: process.env.NODE_ENV === 'production'
+    });
 });
 
 // Questions API

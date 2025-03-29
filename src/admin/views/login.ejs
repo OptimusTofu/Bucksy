@@ -53,19 +53,21 @@
                             </button>
                         </div>
             </form>
-            <div class="text-center text-xs text-gray-500 mt-4">
-                <p>Development Mode</p>
-                <p>Username: admin | Password: admin123</p>
-            </div>
-            <div class="flex justify-center mt-4">
-                <div class="theme-toggle-container flex items-center">
-                    <span class="text-sm text-gray-600 mr-2">Theme</span>
-                    <div id="themeToggle" class="theme-toggle">
-                        <span class="theme-toggle-icon sun"><i class="fas fa-sun"></i></span>
-                        <span class="theme-toggle-icon moon"><i class="fas fa-moon"></i></span>
-                    </div>
+            <% if (!isProduction) { %>
+                <div class="text-center text-xs text-gray-500 mt-4">
+                    <p>Development Mode</p>
+                    <p>Username: admin | Password: admin123</p>
                 </div>
-            </div>
+                <% } %>
+                    <div class="flex justify-center mt-4">
+                        <div class="theme-toggle-container flex items-center">
+                            <span class="text-sm text-gray-600 mr-2">Theme</span>
+                            <div id="themeToggle" class="theme-toggle">
+                                <span class="theme-toggle-icon sun"><i class="fas fa-sun"></i></span>
+                                <span class="theme-toggle-icon moon"><i class="fas fa-moon"></i></span>
+                            </div>
+                        </div>
+                    </div>
         </div>
     </div>
 
