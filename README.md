@@ -146,6 +146,80 @@ old/                # Legacy JavaScript code (for reference only)
 - Welcome and goodbye messages
 - Rare Pokemon notifications
 
+## Commands
+
+### Admin Commands
+All admin commands require the `Manage Roles` permission and can only be used in the admin channel.
+
+#### Role Management
+- `/add-role <user> <role>` - Add a role to a user
+- `/remove-role <user> <role>` - Remove a role from a user
+- `/list-roles <user>` - List all roles for a user
+- `/manage-roles` - Manage server roles (create, delete, edit)
+
+#### Channel Management
+- `/manage-channels` - Manage server channels
+  - Create new channels
+  - Delete existing channels
+  - Edit channel properties
+  - List all channels
+
+#### User Management
+- `/add-admin <user>` - Add a user as admin
+- `/remove-admin <user>` - Remove admin status from a user
+- `/list-admins` - List all admin users
+- `/clear-warnings <user>` - Clear warnings for a user
+
+#### Server Settings
+- `/server-settings` - View and modify server settings
+- `/automod-settings` - Configure automod settings
+  - Add/remove banned words
+  - Enable/disable features
+  - Set warning thresholds
+
+#### Game Management
+- `/add-shiny <pokemon>` - Add a shiny Pokemon to the database
+- `/remove-shiny <pokemon>` - Remove a shiny Pokemon
+- `/add-question <text>` - Add a new question to the database
+- `/remove-question <text>` - Remove a question
+
+### User Commands
+
+#### Points System
+- `/register` - Register for the points system
+- `/balance` - Check your points balance
+- `/spend <amount>` - Spend points on items
+- `/spin` - Play the slot machine (costs 10 points)
+
+#### Role Commands
+- `/iam <role>` - Add a self-assignable role
+- `/iamnot <role>` - Remove a self-assignable role
+- `/want <role>` - Add a role to your wishlist
+- `/unwant <role>` - Remove a role from your wishlist
+
+#### Games
+- `/guess` - Play "Who's That Pokemon?"
+- `/trivia` - Play Pokemon trivia
+- `/count` - Participate in Pokemon counting challenge
+
+#### Utility
+- `/help` - Show command help
+- `/ping` - Check bot latency
+- `/serverinfo` - View server information
+- `/userinfo [user]` - View user information
+
+### Points System Details
+- Starting points: 500
+- Points can be earned from:
+  - Correct Pokemon guesses (100 points)
+  - Trivia games (50-200 points)
+  - Slot machine (10-5000 points)
+  - Daily activities
+- Points can be spent on:
+  - Slot machine spins (10 points)
+  - Special items
+  - Role purchases
+
 ## Slash Commands
 
 The bot uses Discord.js v14 slash commands for a modern user experience:
